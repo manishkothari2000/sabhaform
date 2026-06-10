@@ -243,41 +243,62 @@ async function loadSponsors() {
 
   try {
     const result = await jsonpFetch(SCRIPT_URL);
-    if(result.status !== 'success') throw new Error(result.message);
+    if(result.status !== 'success') throw new Error(result.message || 'Unknown error');
     
-    // Filter by event date and description
-    // Debug: show first few rows to diagnose matching
-    console.log('Total rows from sheet:', result.data.length);
-    console.log('Looking for date:', event.display, 'event:', event.description);
-    if (result.data.length > 0) {
-      console.log('First row sample:', JSON.stringify(result.data[0]));
-      console.log('Keys:', Object.keys(result.data[0]));
+    const allRows = result.data || [];
+
+    const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+    // Convert any date format to "DD-Mon-YYYY" for comparison
+    function normDate(d) {
+      if (!d) return '';
+      const s = String(d).trim();
+      // ISO timestamp: 2026-06-14T14:00:00.000Z
+      if (s.match(/^\d{4}-\d{2}-\d{2}T/)) {
+        const parts = s.split('T')[0].split('-');
+        const dd = parts[2].padStart(2,'0');
+        const mon = MONTHS[parseInt(parts[1])-1];
+        mon && (mon[0].toUpperCase());
+        const yyyy = parts[0];
+        return dd + '-' + mon.charAt(0).toUpperCase() + mon.slice(1) + '-' + yyyy;
+      }
+      // Already formatted like 14-Jun-2026 or 14 Jun 2026
+      return s.replace(/\s+/g,'-');
     }
 
-    // Normalise for comparison — strip dashes/spaces, lowercase
-    const normalise = d => String(d).replace(/-/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-    const rows = result.data.filter(r => {
-      const dateMatch = normalise(r['Date']) === normalise(event.display);
-      const eventMatch = normalise(r['Event']) === normalise(event.description);
-      return dateMatch && eventMatch;
+    const normEvent = s => String(s || '').trim().toLowerCase();
+    const targetDate = normDate(event.display);
+    const targetEvent = normEvent(event.description);
+
+    console.log('Target date:', targetDate, '| Target event:', targetEvent);
+    if (allRows.length > 0) console.log('Sheet date sample:', normDate(allRows[0]['Date']));
+
+    const matched = allRows.filter(r => {
+      const rowDate = normDate(r['Date'] || r['date'] || '');
+      const rowEvent = normEvent(r['Event'] || r['event'] || '');
+      return rowDate === targetDate && rowEvent === targetEvent;
     });
 
-    console.log('Matched rows:', rows.length);
+    console.log('Matched:', matched.length);
 
-    sponsors = rows.map(r => r['Sponsor Name']).filter(Boolean);
+    if (matched.length === 0) {
+      // Show helpful debug in the UI
+      const sampleDates = [...new Set(allRows.slice(0,10).map(r => r['Date'] || r['date'] || ''))].join(', ');
+      list.innerHTML = `<div class="loading" style="font-size:0.8rem">
+        No match.<br>
+        <b>Looking for:</b> Date=<i>${event.display}</i> | Event=<i>${event.description}</i><br>
+        <b>Sheet dates found:</b> <i>${sampleDates}</i>
+      </div>`;
+    }
+
+    sponsors = matched.map(r => r['Sponsor Name'] || r['sponsor name'] || r['SponsorName'] || '').filter(Boolean);
     sponsors = [...new Set(sponsors)];
     renderSponsors();
     updatePreview();
 
-    if(sponsors.length === 0) {
-      // Show debug info in UI
-      const sample = result.data.slice(0,3).map(r => 
-        'Date:[' + r['Date'] + '] Event:[' + r['Event'] + ']'
-      ).join('<br>');
-      list.innerHTML = '<div class="loading">No match found.<br><small>Looking for: Date:[' + event.display + '] Event:[' + event.description + ']<br>Sheet sample:<br>' + sample + '</small></div>';
-    }
   } catch(err) {
-    list.innerHTML = '<div class="loading" style="color:#C0442A">Error loading: ' + err.message + '</div>';
+    list.innerHTML = '<div class="loading" style="color:#C0442A">Error: ' + err.message + '</div>';
+    console.error(err);
   }
 }
 
