@@ -295,8 +295,7 @@ async function submitEntry() {
       volunteer: volunteer
     };
 
-    await iframePost(SCRIPT_URL, payload);
-    const result = {status: 'success'};
+    const result = await jsonpPost(SCRIPT_URL, payload);
 
     if(result.status === 'success') {
       document.getElementById('savedName').textContent = sponsorName;

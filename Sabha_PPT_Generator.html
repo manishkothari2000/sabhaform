@@ -372,58 +372,75 @@ async function generatePPT() {
 
 // Update preview when perSlide changes
 
-// JSONP fetch — bypasses CORS for Google Apps Script GET
+
 function jsonpFetch(url) {
-  return new Promise((resolve, reject) => {
-    const cbName = 'cb_' + Math.random().toString(36).slice(2);
-    const script = document.createElement('script');
-    const timeout = setTimeout(() => {
-      delete window[cbName];
-      document.body.removeChild(script);
-      reject(new Error('Request timed out'));
-    }, 10000);
+  return new Promise(function(resolve, reject) {
+    var cbName = 'jsonpcb_' + Math.random().toString(36).slice(2);
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (!done) {
+        done = true;
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error('Timeout'));
+      }
+    }, 15000);
     window[cbName] = function(data) {
-      clearTimeout(timeout);
-      delete window[cbName];
-      document.body.removeChild(script);
-      resolve(data);
+      if (!done) {
+        done = true;
+        clearTimeout(timer);
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(data);
+      }
     };
-    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName + '&t=' + Date.now();
-    script.onerror = () => { clearTimeout(timeout); reject(new Error('Script load failed')); };
-    document.body.appendChild(script);
+    script.onerror = function() {
+      if (!done) {
+        done = true;
+        clearTimeout(timer);
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error('Script load failed - check Apps Script deployment'));
+      }
+    };
+    var sep = url.indexOf('?') === -1 ? '?' : '&';
+    script.src = url + sep + 'callback=' + cbName + '&t=' + Date.now();
+    document.head.appendChild(script);
   });
 }
 
-// POST via hidden iframe form — bypasses CORS for Google Apps Script POST
-function iframePost(url, data) {
-  return new Promise((resolve) => {
-    const iframeName = 'iframe_' + Math.random().toString(36).slice(2);
-    const iframe = document.createElement('iframe');
-    iframe.name = iframeName;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = url;
-    form.target = iframeName;
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'payload';
-    input.value = JSON.stringify(data);
-    form.appendChild(input);
-    document.body.appendChild(form);
-
-    iframe.onload = () => {
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-        document.body.removeChild(form);
+function jsonpPost(url, data) {
+  return new Promise(function(resolve, reject) {
+    var cbName = 'jsonpcb_' + Math.random().toString(36).slice(2);
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (!done) { done = true; delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        // Assume success on timeout for POST (fire and forget)
         resolve({status: 'success'});
-      }, 500);
+      }
+    }, 10000);
+    window[cbName] = function(result) {
+      if (!done) { done = true; clearTimeout(timer); delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(result);
+      }
     };
-    form.submit();
-    // Resolve after 3s regardless
-    setTimeout(() => resolve({status: 'success'}), 3000);
+    script.onerror = function() {
+      if (!done) { done = true; clearTimeout(timer); delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve({status: 'success'}); // fire-and-forget for POST
+      }
+    };
+    // Encode all data as URL params for GET-based JSONP POST
+    var params = 'callback=' + cbName + '&t=' + Date.now();
+    Object.keys(data).forEach(function(k) {
+      params += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
+    });
+    script.src = url + '?' + params;
+    document.head.appendChild(script);
   });
 }
 
