@@ -247,20 +247,25 @@ async function loadSponsors() {
     
     const allRows = result.data || [];
 
-    const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-    // Convert any date format to "DD-Mon-YYYY" for comparison
+    // Convert any date format to "DD-Mon-YYYY" — handles ISO timestamps with timezone offset
     function normDate(d) {
       if (!d) return '';
       const s = String(d).trim();
-      // ISO timestamp: 2026-06-14T14:00:00.000Z
+      // ISO timestamp like 2026-06-13T14:00:00.000Z
+      // Use local date parsing to handle timezone correctly
       if (s.match(/^\d{4}-\d{2}-\d{2}T/)) {
-        const parts = s.split('T')[0].split('-');
-        const dd = parts[2].padStart(2,'0');
-        const mon = MONTHS[parseInt(parts[1])-1];
-        mon && (mon[0].toUpperCase());
-        const yyyy = parts[0];
-        return dd + '-' + mon.charAt(0).toUpperCase() + mon.slice(1) + '-' + yyyy;
+        // Parse the date portion directly (ignore time/timezone — just use YYYY-MM-DD)
+        // Add offset for Australia UTC+10/+11: if time is T14:00Z that means midnight AEST
+        const isoDate = new Date(s);
+        // Use UTC+10 offset to get the correct local date
+        const localMs = isoDate.getTime() + (10 * 60 * 60 * 1000);
+        const local = new Date(localMs);
+        const dd = String(local.getUTCDate()).padStart(2,'0');
+        const mon = MONTHS[local.getUTCMonth()];
+        const yyyy = local.getUTCFullYear();
+        return dd + '-' + mon + '-' + yyyy;
       }
       // Already formatted like 14-Jun-2026 or 14 Jun 2026
       return s.replace(/\s+/g,'-');
