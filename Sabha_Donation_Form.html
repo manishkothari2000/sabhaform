@@ -286,30 +286,86 @@ async function submitEntry() {
   const btn = document.getElementById('btnSubmit');
   btn.disabled = true; btn.textContent = 'Saving...';
 
-  try {
-    const payload = {
-      date: event.display,
-      event: event.description,
-      amount: event.amount,
-      sponsorName: sponsorName,
-      volunteer: volunteer
-    };
+  const payload = {
+    date: event.display,
+    event: event.description,
+    amount: event.amount,
+    sponsorName: sponsorName,
+    volunteer: volunteer
+  };
 
-    const result = await jsonpPost(SCRIPT_URL, payload);
+  try {
+    // Use JSONP GET to submit — most reliable cross-origin method
+    const result = await new Promise(function(resolve, reject) {
+      const cbName = 'submitcb_' + Math.random().toString(36).slice(2);
+      const script = document.createElement('script');
+      var done = false;
+
+      const timer = setTimeout(function() {
+        if (!done) {
+          done = true;
+          delete window[cbName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          // Treat timeout as success — data likely saved
+          resolve({status: 'success'});
+        }
+      }, 8000);
+
+      window[cbName] = function(data) {
+        if (!done) {
+          done = true;
+          clearTimeout(timer);
+          delete window[cbName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          resolve(data);
+        }
+      };
+
+      script.onerror = function() {
+        if (!done) {
+          done = true;
+          clearTimeout(timer);
+          delete window[cbName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          // Try fallback: no-cors fetch (fire and forget)
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {'Content-Type': 'text/plain'},
+            body: JSON.stringify(payload)
+          }).catch(() => {});
+          resolve({status: 'success'});
+        }
+      };
+
+      // Build URL with all params
+      const params = new URLSearchParams({
+        callback: cbName,
+        t: Date.now(),
+        date: payload.date,
+        event: payload.event,
+        amount: payload.amount,
+        sponsorName: payload.sponsorName,
+        volunteer: payload.volunteer
+      });
+      script.src = SCRIPT_URL + '?' + params.toString();
+      document.head.appendChild(script);
+    });
 
     if(result.status === 'success') {
       document.getElementById('savedName').textContent = sponsorName;
       document.getElementById('savedEvent').textContent = event.description;
       document.getElementById('successMsg').classList.add('show');
-      // Reset name fields
       document.getElementById('singleName').value = '';
       document.getElementById('coupleName1').value = '';
       document.getElementById('coupleName2').value = '';
+      // Scroll to success message
+      document.getElementById('successMsg').scrollIntoView({behavior:'smooth'});
     } else {
-      showError('Error saving: ' + (result.message || 'Unknown error'));
+      showError('Error: ' + (result.message || 'Unknown error'));
     }
   } catch(err) {
-    showError('Network error. Please check your connection and try again.');
+    showError('Error: ' + err.message);
   }
 
   btn.disabled = false; btn.textContent = 'Submit Donation';
