@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vichran Seva Selection</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --saffron:#AE5425;--saffron-lt:#E97132;--cream:#FAF6F0;
+  --warm-white:#FFFDF9;--border:#DDD0C0;--text-dark:#2C1A0E;
+  --text-mid:#6B4C35;--shadow:rgba(174,84,37,0.15);--green:#196B24;
+  --check-size:22px;
+}
+body{min-height:100vh;background:var(--cream);font-family:Georgia,serif;color:var(--text-dark);
+  display:flex;flex-direction:column;align-items:center;padding:20px 12px 60px;
+  background-image:radial-gradient(ellipse 80% 30% at 50% 0%,rgba(233,113,50,0.07) 0%,transparent 70%);}
+.logo{font-family:Georgia,serif;font-size:1.4rem;font-weight:bold;color:var(--saffron);text-align:center;margin-bottom:2px;}
+.subtitle{text-align:center;font-size:0.82rem;color:var(--text-mid);font-style:italic;margin-bottom:20px;}
+.card{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;
+  padding:20px 16px;width:100%;max-width:760px;box-shadow:0 4px 24px var(--shadow);}
+
+/* Name fields */
+.name-section{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+@media(max-width:500px){.name-section{grid-template-columns:1fr;}}
+.field label{display:block;font-size:0.7rem;font-weight:bold;letter-spacing:0.08em;color:var(--saffron);text-transform:uppercase;margin-bottom:5px;}
+.field input{width:100%;padding:10px 12px;font-family:Georgia,serif;font-size:0.95rem;
+  border:1.5px solid var(--border);border-radius:8px;background:#FFFCF8;color:var(--text-dark);outline:none;}
+.field input:focus{border-color:var(--saffron-lt);box-shadow:0 0 0 3px rgba(233,113,50,0.1);}
+.field input::placeholder{color:#C4AA92;font-style:italic;}
+
+/* Volunteer row */
+.vol-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+@media(max-width:500px){.vol-row{grid-template-columns:1fr;}}
+
+/* Section title */
+.section-title{font-size:0.7rem;font-weight:bold;letter-spacing:0.08em;color:var(--saffron);
+  text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;
+  border-bottom:1.5px solid var(--border);}
+
+/* Seva grid table */
+.table-wrap{overflow-x:auto;margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;min-width:480px;}
+th,td{border:1px solid var(--border);text-align:center;vertical-align:middle;}
+.seva-label{text-align:left;padding:10px 12px;font-size:0.82rem;color:var(--text-dark);
+  font-weight:bold;min-width:180px;background:#FFF8F2;line-height:1.4;}
+.date-hdr{padding:6px 4px;background:var(--saffron);color:white;min-width:70px;}
+.day-name{font-size:0.72rem;font-weight:bold;letter-spacing:0.05em;}
+.date-num{font-size:1.1rem;font-weight:bold;line-height:1.1;}
+.date-mon{font-size:0.65rem;opacity:0.85;}
+.check-cell{padding:8px 4px;min-width:70px;}
+.check-cell.na{color:#C4AA92;font-size:1rem;}
+.amt{font-size:0.72rem;color:var(--text-mid);margin-top:3px;}
+
+/* Custom checkbox */
+.check-wrap{display:inline-flex;flex-direction:column;align-items:center;cursor:pointer;gap:0;}
+.check-wrap input{position:absolute;opacity:0;width:0;height:0;}
+.checkmark{width:var(--check-size);height:var(--check-size);border:2px solid var(--border);
+  border-radius:5px;background:#FFFCF8;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+.check-wrap input:checked + .checkmark{background:var(--saffron);border-color:var(--saffron);}
+.check-wrap input:checked + .checkmark::after{content:'\2713';color:white;font-size:14px;font-weight:bold;}
+.check-wrap:hover .checkmark{border-color:var(--saffron-lt);}
+
+/* All days row */
+.all-days-cell{padding:10px 16px;text-align:left;background:#FFF5EE;}
+.all-days-label{font-size:0.9rem;color:var(--text-dark);margin-left:8px;font-weight:bold;}
+.check-wrap.all-days{flex-direction:row;align-items:center;gap:0;}
+
+/* Total bar */
+.total-bar{background:#FFF5EE;border:1px solid #F0D0B8;border-radius:8px;
+  padding:12px 16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
+.total-label{font-size:0.82rem;color:var(--text-mid);font-weight:bold;letter-spacing:0.05em;text-transform:uppercase;}
+.total-amount{font-size:1.4rem;font-weight:bold;color:var(--saffron);font-family:Georgia,serif;}
+.selected-summary{font-size:0.8rem;color:var(--text-mid);margin-top:4px;font-style:italic;}
+
+/* Submit button */
+.btn-submit{width:100%;padding:15px;font-family:Georgia,serif;font-size:1rem;font-weight:bold;
+  letter-spacing:0.08em;text-transform:uppercase;color:white;
+  background:linear-gradient(135deg,var(--saffron) 0%,var(--saffron-lt) 100%);
+  border:none;border-radius:10px;cursor:pointer;
+  box-shadow:0 4px 14px rgba(174,84,37,0.3);transition:transform 0.15s;}
+.btn-submit:active{transform:scale(0.98);}
+.btn-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.error-msg{display:none;margin-top:12px;padding:12px;background:#FFF0ED;
+  border:1px solid #F4A88A;border-radius:8px;color:#C0442A;font-size:0.88rem;}
+.error-msg.show{display:block;}
+.success-card{display:none;margin-top:0;padding:24px;background:#EDF7EE;
+  border:1.5px solid #8BC98E;border-radius:12px;text-align:center;}
+.success-card.show{display:block;animation:fadeIn 0.3s ease;}
+.success-card .tick{font-size:2.5rem;}
+.success-card h3{font-size:1.1rem;color:var(--green);margin:8px 0 4px;}
+.success-card p{font-size:0.9rem;color:#2D6A31;line-height:1.6;}
+.success-card .saved-list{text-align:left;margin:12px auto;max-width:320px;}
+.success-card .saved-item{padding:4px 0;font-size:0.88rem;color:#1A5C1E;border-bottom:1px solid #C8E6C9;}
+.btn-new{margin-top:16px;padding:10px 24px;font-family:Georgia,serif;font-size:0.9rem;
+  color:var(--saffron);background:transparent;border:2px solid var(--saffron);
+  border-radius:8px;cursor:pointer;transition:all 0.2s;}
+.btn-new:hover{background:var(--saffron);color:white;}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:16px 0;}
+.nav-link{text-align:center;margin-top:20px;font-size:0.88rem;color:var(--text-mid);}
+.nav-link a{color:var(--saffron);text-decoration:none;font-weight:bold;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="logo">Pujya Atmatrupt Swami Vichran</div>
+<div class="subtitle">Seva Selection Form &mdash; 6 to 11 August 2026</div>
+
+<div class="card" id="mainCard">
+
+  <!-- Name fields -->
+  <div class="section-title">Sponsor Details</div>
+  <div class="name-section">
+    <div class="field">
+      <label>Name 1</label>
+      <input type="text" id="name1" placeholder="First Last" />
+    </div>
+    <div class="field">
+      <label>Name 2 (optional)</label>
+      <input type="text" id="name2" placeholder="First Last" />
+    </div>
+  </div>
+  <div class="vol-row">
+    <div class="field">
+      <label>Contact No.</label>
+      <input type="text" id="contact" placeholder="Mobile number" />
+    </div>
+  </div>
+  <input type="hidden" id="volunteer" value="Volunteer" />
+
+  <div class="divider"></div>
+
+  <!-- Seva selection grid -->
+  <div class="section-title">Select Seva</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="background:#FFF5EE;padding:8px 12px;text-align:left;font-size:0.78rem;color:var(--text-mid);">Seva Type</th>
+          <th class="date-hdr"><div class="day-name">Thu</div><div class="date-num">06</div><div class="date-mon">Aug</div></th><th class="date-hdr"><div class="day-name">Fri</div><div class="date-num">07</div><div class="date-mon">Aug</div></th><th class="date-hdr"><div class="day-name">Sat</div><div class="date-num">08</div><div class="date-mon">Aug</div></th><th class="date-hdr"><div class="day-name">Sun</div><div class="date-num">09</div><div class="date-mon">Aug</div></th><th class="date-hdr"><div class="day-name">Mon</div><div class="date-num">10</div><div class="date-mon">Aug</div></th><th class="date-hdr"><div class="day-name">Tue</div><div class="date-num">11</div><div class="date-mon">Aug</div></th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr class="seva-row">
+          <td class="seva-label">Parayan Yajman Seva</td>
+          
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Parayan Yajman Seva" data-date="06-Aug-2026" data-amount="101">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$101</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Parayan Yajman Seva" data-date="07-Aug-2026" data-amount="101">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$101</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Parayan Yajman Seva" data-date="08-Aug-2026" data-amount="101">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$101</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Parayan Yajman Seva" data-date="09-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Parayan Yajman Seva" data-date="10-Aug-2026" data-amount="101">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$101</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Parayan Yajman Seva" data-date="11-Aug-2026" data-amount="101">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$101</div>
+            </td>
+        </tr>
+        <tr class="seva-row">
+          <td class="seva-label">Dhotia Seva — Pujya Atmatrupt Swami</td>
+          <td class="check-cell na">—</td><td class="check-cell na">—</td><td class="check-cell na">—</td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Dhotia Seva — Pujya Atmatrupt Swami" data-date="09-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td><td class="check-cell na">—</td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Dhotia Seva — Pujya Atmatrupt Swami" data-date="11-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td>
+        </tr>
+        <tr class="seva-row">
+          <td class="seva-label">Dhotia Seva — All Santo</td>
+          <td class="check-cell na">—</td><td class="check-cell na">—</td><td class="check-cell na">—</td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Dhotia Seva — All Santo" data-date="09-Aug-2026" data-amount="501">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$501</div>
+            </td><td class="check-cell na">—</td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Dhotia Seva — All Santo" data-date="11-Aug-2026" data-amount="501">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$501</div>
+            </td>
+        </tr>
+        <tr class="seva-row">
+          <td class="seva-label">Sant Rasoi Seva — One Day</td>
+          
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Sant Rasoi Seva — One Day" data-date="06-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Sant Rasoi Seva — One Day" data-date="07-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Sant Rasoi Seva — One Day" data-date="08-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Sant Rasoi Seva — One Day" data-date="09-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Sant Rasoi Seva — One Day" data-date="10-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td>
+            <td class="check-cell">
+              <label class="check-wrap">
+                <input type="checkbox" class="seva-check" data-seva="Sant Rasoi Seva — One Day" data-date="11-Aug-2026" data-amount="151">
+                <span class="checkmark"></span>
+              </label>
+              <div class="amt">$151</div>
+            </td>
+        </tr>
+        <tr class="seva-row">
+          <td class="seva-label">Sant Rasoi Seva — All Days</td>
+          <td colspan="6" class="all-days-cell">
+            <label class="check-wrap">
+              <input type="checkbox" class="seva-check" data-seva="Sant Rasoi Seva — All Days" data-date="All Days" data-amount="351">
+              <span class="checkmark"></span>
+              <span class="all-days-label">All 6 Days — $351</span>
+            </label>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Total -->
+  <div class="total-bar">
+    <div>
+      <div class="total-label">Total Donation</div>
+      <div class="selected-summary" id="selectedSummary">No seva selected</div>
+    </div>
+    <div class="total-amount" id="totalAmount">$0</div>
+  </div>
+
+  <button class="btn-submit" id="btnSubmit" onclick="submitAll()">Confirm &amp; Submit</button>
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<!-- Success screen -->
+<div class="card success-card" id="successCard">
+  <div class="tick">&#x2705;</div>
+  <h3>Seva Registered Successfully!</h3>
+  <p>Thank you, <strong id="savedSponsor"></strong></p>
+  <div class="saved-list" id="savedList"></div>
+  <p><strong id="savedTotal"></strong> total donation recorded</p>
+  <button class="btn-new" onclick="resetForm()">Register Another Sponsor</button>
+</div>
+
+<div class="nav-link">
+  <a href="Vichran_PPT_Generator.html">Open PPT Generator &rarr;</a>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPdWlJX75uLR-Z9zKRPqoO90ID8mUHICojxV3lKIEX9_542eCHj7RfAzS9evxFZROhLg/exec';
+
+// Track total
+function updateTotal() {
+  const checked = document.querySelectorAll('.seva-check:checked');
+  let total = 0;
+  const items = [];
+  checked.forEach(function(cb) {
+    total += parseInt(cb.dataset.amount);
+    items.push(cb.dataset.seva + ' (' + cb.dataset.date + ') $' + cb.dataset.amount);
+  });
+  document.getElementById('totalAmount').textContent = '$' + total;
+  document.getElementById('selectedSummary').textContent =
+    checked.length === 0 ? 'No seva selected' :
+    checked.length + ' seva' + (checked.length > 1 ? 's' : '') + ' selected';
+}
+
+document.querySelectorAll('.seva-check').forEach(function(cb) {
+  cb.addEventListener('change', updateTotal);
+});
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 5000);
+}
+
+function getSponsorName() {
+  const n1 = document.getElementById('name1').value.trim();
+  const n2 = document.getElementById('name2').value.trim();
+  if (!n1) return '';
+  if (n2) return n1.split(' ')[0] + ' & ' + n2;
+  return n1;
+}
+
+async function submitAll() {
+  const sponsorName = getSponsorName();
+  const volunteer = document.getElementById('volunteer').value.trim();
+  const checked = document.querySelectorAll('.seva-check:checked');
+
+  if (!document.getElementById('name1').value.trim()) { showError('Please enter Name 1.'); return; }
+  if (checked.length === 0) { showError('Please select at least one seva.'); return; }
+
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Saving ' + checked.length + ' seva(s)...';
+
+  const sevas = [];
+  checked.forEach(function(cb) {
+    sevas.push({ date: cb.dataset.date, seva: cb.dataset.seva, amount: cb.dataset.amount });
+  });
+
+  let successCount = 0;
+  for (const seva of sevas) {
+    try {
+      await jsonpPost(SCRIPT_URL, {
+        date: seva.date, seva: seva.seva, amount: seva.amount,
+        sponsorName: sponsorName, volunteer: volunteer
+      });
+      successCount++;
+    } catch(err) {
+      console.error('Failed to save:', seva, err);
+    }
+  }
+
+  // Show success
+  const total = sevas.reduce(function(s,sv){ return s + parseInt(sv.amount); }, 0);
+  document.getElementById('savedSponsor').textContent = sponsorName;
+  document.getElementById('savedTotal').textContent = '$' + total;
+  document.getElementById('savedList').innerHTML = sevas.map(function(sv) {
+    return '<div class="saved-item">&#x2713; ' + sv.seva + ' &mdash; ' + sv.date + ' &mdash; $' + sv.amount + '</div>';
+  }).join('');
+
+  document.getElementById('mainCard').style.display = 'none';
+  document.getElementById('successCard').classList.add('show');
+  window.scrollTo({top:0, behavior:'smooth'});
+
+  btn.disabled = false;
+  btn.textContent = 'Confirm & Submit';
+}
+
+function resetForm() {
+  document.getElementById('name1').value = '';
+  document.getElementById('name2').value = '';
+  document.getElementById('contact').value = '';
+  document.querySelectorAll('.seva-check:checked').forEach(function(cb){ cb.checked = false; });
+  updateTotal();
+  document.getElementById('mainCard').style.display = 'block';
+  document.getElementById('successCard').classList.remove('show');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+
+function jsonpPost(url, data) {
+  return new Promise(function(resolve, reject) {
+    var cbName = 'jsonpcb_' + Math.random().toString(36).slice(2);
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (!done) { done = true; delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve({status:'success'}); }
+    }, 10000);
+    window[cbName] = function(result) {
+      if (!done) { done = true; clearTimeout(timer); delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(result); }
+    };
+    script.onerror = function() {
+      if (!done) { done = true; clearTimeout(timer); delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(data)}).catch(function(){});
+        resolve({status:'success'}); }
+    };
+    var params = new URLSearchParams({callback:cbName, t:Date.now(),
+      date:data.date, event:data.seva, amount:data.amount,
+      sponsorName:data.sponsorName, volunteer:data.volunteer});
+    script.src = url + '?' + params.toString();
+    document.head.appendChild(script);
+  });
+}
+
+</script>
+</body>
+</html>

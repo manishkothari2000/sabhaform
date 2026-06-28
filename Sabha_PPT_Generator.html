@@ -81,6 +81,33 @@ select:focus,input[type=number]:focus{border-color:var(--saffron-lt);}
 </style>
 </head>
 <body>
+<div id="passwordGate" style="
+  position:fixed;inset:0;background:#FAF6F0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:9999;padding:24px;
+  background-image:radial-gradient(ellipse 80% 30% at 50% 0%,rgba(233,113,50,0.07) 0%,transparent 70%);
+">
+  <div style="background:white;border:1px solid #DDD0C0;border-radius:14px;padding:36px 32px;
+    max-width:380px;width:100%;box-shadow:0 4px 24px rgba(174,84,37,0.15);text-align:center;">
+    <div style="font-family:Georgia,serif;font-size:1.3rem;font-weight:bold;color:#AE5425;margin-bottom:4px;">
+      Sabha Seva Yajman
+    </div>
+    <div style="font-size:0.82rem;color:#6B4C35;font-style:italic;margin-bottom:24px;">PPT Generator &mdash; Authorised Access Only</div>
+    <div style="font-size:0.7rem;font-weight:bold;letter-spacing:0.08em;color:#AE5425;
+      text-transform:uppercase;margin-bottom:8px;text-align:left;">Enter Password</div>
+    <input type="password" id="pwdInput" placeholder="Password"
+      onkeydown="if(event.key==='Enter')checkPassword()"
+      style="width:100%;padding:11px 14px;font-family:Georgia,serif;font-size:1rem;
+      border:1.5px solid #DDD0C0;border-radius:8px;background:#FFFCF8;outline:none;
+      margin-bottom:12px;color:#2C1A0E;" />
+    <div id="pwdError" style="display:none;color:#C0442A;font-size:0.85rem;margin-bottom:10px;"></div>
+    <button onclick="checkPassword()" style="width:100%;padding:13px;font-family:Georgia,serif;
+      font-size:0.95rem;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;
+      color:white;background:linear-gradient(135deg,#AE5425 0%,#E97132 100%);
+      border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 14px rgba(174,84,37,0.3);">
+      Enter
+    </button>
+  </div>
+</div>
 <div class="logo">Sabha Seva Yajman</div>
 <div class="subtitle">PPT Slide Generator</div>
 
@@ -492,5 +519,24 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('perSlide').addEventListener('input', updatePreview);
 });
 </script>
-</body>
+<script>
+const APP_PASSWORD = 'baps2026';
+function checkPassword() {
+  const entered = document.getElementById('pwdInput').value;
+  if (entered === APP_PASSWORD) {
+    document.getElementById('passwordGate').style.display = 'none';
+    document.body.style.overflow = '';
+  } else {
+    const err = document.getElementById('pwdError');
+    err.textContent = 'Incorrect password. Please try again.';
+    err.style.display = 'block';
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.body.style.overflow = 'hidden';
+  setTimeout(function(){ document.getElementById('pwdInput').focus(); }, 100);
+});
+</script></body>
 </html>
