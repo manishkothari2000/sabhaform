@@ -322,8 +322,9 @@ function jsonpFetch(url) {
 document.addEventListener('DOMContentLoaded', function() {
   populateDates();
   document.getElementById('perSlide').addEventListener('input', updatePreview);
+  document.body.style.overflow = 'hidden';
+  setTimeout(function(){ var p = document.getElementById('pwdInput'); if(p) p.focus(); }, 200);
 });
-</script>
 
 <script>
 const APP_PASSWORD = 'baps2026';
@@ -344,10 +345,6 @@ function checkPassword() {
     document.getElementById('pwdInput').focus();
   }
 }
-document.addEventListener('DOMContentLoaded', function() {
-  document.body.style.overflow = 'hidden';
-  setTimeout(function(){ document.getElementById('pwdInput').focus(); }, 100);
-});
 </script>
 </body>
 </html>
