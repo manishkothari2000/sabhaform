@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Vichran Seva Entry</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --saffron:#AE5425;--saffron-lt:#E97132;--cream:#FAF6F0;
+  --warm-white:#FFFDF9;--border:#DDD0C0;--text-dark:#2C1A0E;
+  --text-mid:#6B4C35;--shadow:rgba(174,84,37,0.15);--green:#196B24;
+}
+body{min-height:100vh;background:var(--cream);font-family:Georgia,serif;color:var(--text-dark);
+  display:flex;flex-direction:column;align-items:center;padding:24px 16px 60px;
+  background-image:radial-gradient(ellipse 80% 30% at 50% 0%,rgba(233,113,50,0.07) 0%,transparent 70%);}
+.logo{font-family:Georgia,serif;font-size:1.35rem;font-weight:bold;color:var(--saffron);text-align:center;margin-bottom:2px;}
+.subtitle{text-align:center;font-size:0.82rem;color:var(--text-mid);font-style:italic;margin-bottom:20px;}
+.card{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;
+  padding:24px 20px;width:100%;max-width:480px;box-shadow:0 4px 24px var(--shadow);}
+.field{margin-bottom:16px;}
+label{display:block;font-size:0.72rem;font-weight:bold;letter-spacing:0.08em;color:var(--saffron);text-transform:uppercase;margin-bottom:6px;}
+select,input[type=text]{width:100%;padding:11px 14px;font-family:Georgia,serif;font-size:0.95rem;
+  border:1.5px solid var(--border);border-radius:8px;background:#FFFCF8;color:var(--text-dark);
+  outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+select:focus,input[type=text]:focus{border-color:var(--saffron-lt);box-shadow:0 0 0 3px rgba(233,113,50,0.1);}
+.event-info{margin-top:8px;padding:10px 14px;background:#FFF5EE;border-radius:8px;
+  border:1px solid #F0D0B8;font-size:0.85rem;color:var(--text-mid);display:none;}
+.event-info.show{display:block;}
+.event-info strong{color:var(--saffron);}
+.name-toggle{display:flex;gap:8px;margin-bottom:10px;}
+.toggle-btn{flex:1;padding:8px;font-family:Georgia,serif;font-size:0.85rem;
+  border:1.5px solid var(--border);border-radius:8px;background:#FFFCF8;
+  color:var(--text-mid);cursor:pointer;transition:all 0.2s;text-align:center;}
+.toggle-btn.active{background:var(--saffron);color:white;border-color:var(--saffron);}
+.couple-fields{display:none;gap:10px;}
+.couple-fields.show{display:flex;}
+.couple-fields input{flex:1;}
+.amp{display:flex;align-items:center;font-size:1.1rem;color:var(--saffron);font-weight:bold;padding:0 4px;}
+.btn-submit{width:100%;padding:15px;font-family:Georgia,serif;font-size:1rem;font-weight:bold;
+  letter-spacing:0.08em;text-transform:uppercase;color:white;
+  background:linear-gradient(135deg,var(--saffron) 0%,var(--saffron-lt) 100%);
+  border:none;border-radius:10px;cursor:pointer;margin-top:8px;
+  box-shadow:0 4px 14px rgba(174,84,37,0.3);transition:transform 0.15s;}
+.btn-submit:active{transform:scale(0.98);}
+.btn-submit:disabled{opacity:0.6;cursor:not-allowed;}
+.success-msg{display:none;margin-top:16px;padding:14px 16px;background:#EDF7EE;
+  border:1.5px solid #8BC98E;border-radius:10px;text-align:center;}
+.success-msg.show{display:block;animation:fadeIn 0.3s ease;}
+.tick{font-size:1.8rem;}
+.success-msg p{font-size:0.92rem;color:var(--green);margin-top:4px;line-height:1.6;}
+.success-msg strong{color:#0D5210;}
+.error-msg{display:none;margin-top:12px;padding:12px;background:#FFF0ED;
+  border:1px solid #F4A88A;border-radius:8px;color:#C0442A;font-size:0.88rem;}
+.error-msg.show{display:block;}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:16px 0;}
+.nav-link{text-align:center;margin-top:20px;font-size:0.88rem;color:var(--text-mid);}
+.nav-link a{color:var(--saffron);text-decoration:none;font-weight:bold;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="logo">Pujya Atmatrupt Swami Vichran</div>
+<div class="subtitle">Seva Donation Entry &mdash; 6 to 11 August 2026</div>
+<div class="card">
+  <div class="field">
+    <label>Select Date</label>
+    <select id="dateSelect" onchange="onDateChange()">
+      <option value="">— Choose a date —</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Select Seva Type</label>
+    <select id="sevaSelect" onchange="onSevaChange()">
+      <option value="">— Choose seva type —</option>
+    </select>
+    <div class="event-info" id="eventInfo">Amount: <strong id="eventAmount"></strong></div>
+  </div>
+  <div class="field">
+    <label>Sponsor Name</label>
+    <div class="name-toggle">
+      <div class="toggle-btn active" id="btnSingle" onclick="setNameMode('single')">Single</div>
+      <div class="toggle-btn" id="btnCouple" onclick="setNameMode('couple')">Couple</div>
+    </div>
+    <input type="text" id="singleName" placeholder="e.g. Dhimankumar Gohel" />
+    <div class="couple-fields" id="coupleFields">
+      <input type="text" id="coupleName1" placeholder="e.g. Umesh Desai" />
+      <div class="amp">&amp;</div>
+      <input type="text" id="coupleName2" placeholder="e.g. Mitalben Desai" />
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="field">
+    <label>Your Name (Volunteer)</label>
+    <input type="text" id="volunteerName" placeholder="e.g. MK" />
+  </div>
+  <button class="btn-submit" id="btnSubmit" onclick="submitEntry()">Submit Seva</button>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="success-msg" id="successMsg">
+    <div class="tick">&#x2705;</div>
+    <p><strong id="savedName"></strong><br>registered for <strong id="savedSeva"></strong><br>on <strong id="savedDate"></strong></p>
+  </div>
+</div>
+<div class="nav-link">Generate slides? <a href="Vichran_PPT_Generator.html">Open PPT Generator &rarr;</a></div>
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPdWlJX75uLR-Z9zKRPqoO90ID8mUHICojxV3lKIEX9_542eCHj7RfAzS9evxFZROhLg/exec';
+const VICHRAN_EVENTS = [
+  {date:'06-Aug-2026',seva:'Parayan Yajman Seva',amount:151},
+  {date:'07-Aug-2026',seva:'Parayan Yajman Seva',amount:151},
+  {date:'08-Aug-2026',seva:'Parayan Yajman Seva',amount:151},
+  {date:'09-Aug-2026',seva:'Parayan Yajman Seva',amount:151},
+  {date:'10-Aug-2026',seva:'Parayan Yajman Seva',amount:151},
+  {date:'11-Aug-2026',seva:'Parayan Yajman Seva',amount:151},
+  {date:'09-Aug-2026',seva:'Dhotia Seva - Pujya Atmatrupt Swami',amount:151},
+  {date:'11-Aug-2026',seva:'Dhotia Seva - Pujya Atmatrupt Swami',amount:151},
+  {date:'09-Aug-2026',seva:'Dhotia Seva - All Santo',amount:501},
+  {date:'11-Aug-2026',seva:'Dhotia Seva - All Santo',amount:501},
+  {date:'06-Aug-2026',seva:'Sant Rasoi Seva - One Day',amount:101},
+  {date:'07-Aug-2026',seva:'Sant Rasoi Seva - One Day',amount:101},
+  {date:'08-Aug-2026',seva:'Sant Rasoi Seva - One Day',amount:101},
+  {date:'09-Aug-2026',seva:'Sant Rasoi Seva - One Day',amount:101},
+  {date:'10-Aug-2026',seva:'Sant Rasoi Seva - One Day',amount:101},
+  {date:'11-Aug-2026',seva:'Sant Rasoi Seva - One Day',amount:101},
+  {date:'06-Aug-2026',seva:'Sant Rasoi Seva - All Days',amount:351},
+];
+
+// Unique seva types
+const SEVA_TYPES = ["Parayan Yajman Seva", "Dhotia Seva - Pujya Atmatrupt Swami", "Dhotia Seva - All Santo", "Sant Rasoi Seva - One Day", "Sant Rasoi Seva - All Days"];
+
+let nameMode = 'single';
+const MON_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function getUniqueDates() {
+  return [...new Set(VICHRAN_EVENTS.map(function(e){ return e.date; }))];
+}
+function getSevasForDate(date) {
+  return VICHRAN_EVENTS.filter(function(e){ return e.date === date; });
+}
+function populateDates() {
+  const sel = document.getElementById('dateSelect');
+  getUniqueDates().forEach(function(d) {
+    const opt = document.createElement('option');
+    opt.value = d;
+    const parts = d.split('-');
+    const dateObj = new Date(parseInt(parts[2]), MON_NAMES.indexOf(parts[1]), parseInt(parts[0]));
+    const day = dateObj.toLocaleDateString('en-AU', {weekday:'long'});
+    opt.textContent = day + ', ' + d;
+    sel.appendChild(opt);
+  });
+}
+function onDateChange() {
+  const date = document.getElementById('dateSelect').value;
+  const sevaSel = document.getElementById('sevaSelect');
+  sevaSel.innerHTML = '<option value="">— Choose seva type —</option>';
+  document.getElementById('eventInfo').classList.remove('show');
+  if (!date) return;
+  getSevasForDate(date).forEach(function(e) {
+    const opt = document.createElement('option');
+    opt.value = JSON.stringify(e);
+    opt.textContent = e.seva + ' ($' + e.amount + ')';
+    sevaSel.appendChild(opt);
+  });
+}
+function onSevaChange() {
+  const val = document.getElementById('sevaSelect').value;
+  if (val) {
+    const e = JSON.parse(val);
+    document.getElementById('eventAmount').textContent = '$' + e.amount;
+    document.getElementById('eventInfo').classList.add('show');
+  } else {
+    document.getElementById('eventInfo').classList.remove('show');
+  }
+}
+function setNameMode(mode) {
+  nameMode = mode;
+  document.getElementById('btnSingle').classList.toggle('active', mode==='single');
+  document.getElementById('btnCouple').classList.toggle('active', mode==='couple');
+  document.getElementById('singleName').style.display = mode==='single' ? 'block' : 'none';
+  document.getElementById('coupleFields').classList.toggle('show', mode==='couple');
+}
+function getSponsorName() {
+  if (nameMode === 'single') return document.getElementById('singleName').value.trim();
+  const n1 = document.getElementById('coupleName1').value.trim();
+  const n2 = document.getElementById('coupleName2').value.trim();
+  if (!n1 || !n2) return '';
+  return n1.split(' ')[0] + ' & ' + n2;
+}
+function showError(msg) { const el = document.getElementById('errorMsg'); el.textContent = msg; el.classList.add('show'); }
+function clearError() { document.getElementById('errorMsg').classList.remove('show'); }
+
+async function submitEntry() {
+  clearError();
+  document.getElementById('successMsg').classList.remove('show');
+  const date = document.getElementById('dateSelect').value;
+  const sevaVal = document.getElementById('sevaSelect').value;
+  const sponsorName = getSponsorName();
+  const volunteer = document.getElementById('volunteerName').value.trim();
+  if (!date) { showError('Please select a date.'); return; }
+  if (!sevaVal) { showError('Please select a seva type.'); return; }
+  if (!sponsorName) { showError('Please enter the sponsor name.'); return; }
+  if (!volunteer) { showError('Please enter your volunteer name.'); return; }
+  const seva = JSON.parse(sevaVal);
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    const payload = { date: seva.date, seva: seva.seva, amount: seva.amount, sponsorName: sponsorName, volunteer: volunteer };
+    await jsonpPost(SCRIPT_URL, payload);
+    document.getElementById('savedName').textContent = sponsorName;
+    document.getElementById('savedSeva').textContent = seva.seva;
+    document.getElementById('savedDate').textContent = seva.date;
+    document.getElementById('successMsg').classList.add('show');
+    document.getElementById('singleName').value = '';
+    document.getElementById('coupleName1').value = '';
+    document.getElementById('coupleName2').value = '';
+    document.getElementById('successMsg').scrollIntoView({behavior:'smooth'});
+  } catch(err) {
+    showError('Error: ' + err.message);
+  }
+  btn.disabled = false; btn.textContent = 'Submit Seva';
+}
+
+function jsonpFetch(url) {
+  return new Promise(function(resolve, reject) {
+    var cbName = 'jsonpcb_' + Math.random().toString(36).slice(2);
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (!done) { done = true; delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error('Timeout')); }
+    }, 15000);
+    window[cbName] = function(data) {
+      if (!done) { done = true; clearTimeout(timer); delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(data); }
+    };
+    script.onerror = function() {
+      if (!done) { done = true; clearTimeout(timer); delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error('Script load failed')); }
+    };
+    var sep = url.indexOf('?') === -1 ? '?' : '&';
+    script.src = url + sep + 'callback=' + cbName + '&t=' + Date.now();
+    document.head.appendChild(script);
+  });
+}
+
+function jsonpPost(url, data) {
+  return new Promise(function(resolve, reject) {
+    var cbName = 'jsonpcb_' + Math.random().toString(36).slice(2);
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function() {
+      if (!done) { done = true; delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve({status:'success'}); }
+    }, 10000);
+    window[cbName] = function(result) {
+      if (!done) { done = true; clearTimeout(timer); delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(result); }
+    };
+    script.onerror = function() {
+      if (!done) { done = true; clearTimeout(timer); delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(data)}).catch(function(){});
+        resolve({status:'success'}); }
+    };
+    var params = new URLSearchParams({callback:cbName, t:Date.now(),
+      date:data.date, event:data.seva, amount:data.amount,
+      sponsorName:data.sponsorName, volunteer:data.volunteer});
+    script.src = url + '?' + params.toString();
+    document.head.appendChild(script);
+  });
+}
+populateDates();
+</script>
+</body>
+</html>
