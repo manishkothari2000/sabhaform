@@ -201,7 +201,8 @@ async function loadSponsors(){
       var rd=normDate(r['Date']||r['date']||'');
       var rs=norm(r['Seva']||r['seva']||r['Event']||r['event']||'');
       var rn=(r['Sponsor Name']||r['sponsor name']||'').trim();
-      if(rd===curDate&&rn)sevas.forEach(function(s){if(norm(s.seva)===rs&&!sponsors[s.seva].includes(rn))sponsors[s.seva].push(rn);});
+      var dateMatch=(rd===curDate||norm(r['Date']||r['date']||'')==='all days');
+      if(dateMatch&&rn)sevas.forEach(function(s){if(norm(s.seva)===rs&&!sponsors[s.seva].includes(rn))sponsors[s.seva].push(rn);});
     });
     renderSponsors();updatePreview();
     var tot=Object.values(sponsors).reduce(function(s,a){return s+a.length;},0);
