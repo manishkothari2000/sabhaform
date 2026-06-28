@@ -326,8 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function(){ var p = document.getElementById('pwdInput'); if(p) p.focus(); }, 200);
 });
 
-<script>
-const APP_PASSWORD = 'baps2026';
 function checkPassword() {
   const entered = document.getElementById('pwdInput').value;
   if (entered === APP_PASSWORD) {
