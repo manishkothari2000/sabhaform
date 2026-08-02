@@ -360,6 +360,7 @@ async function submitAll() {
   btn.textContent = 'Saving ' + checked.length + ' seva(s)...';
 
   const sevas = [];
+  const contact = document.getElementById('contact').value.trim();
   checked.forEach(function(cb) {
     sevas.push({ date: cb.dataset.date, seva: cb.dataset.seva, amount: cb.dataset.amount });
   });
@@ -369,7 +370,7 @@ async function submitAll() {
     try {
       await jsonpPost(SCRIPT_URL, {
         date: seva.date, seva: seva.seva, amount: seva.amount,
-        sponsorName: sponsorName, volunteer: volunteer
+        sponsorName: sponsorName, volunteer: volunteer, centre: 'Sydney', contact: contact
       });
       successCount++;
     } catch(err) {
@@ -428,7 +429,7 @@ function jsonpPost(url, data) {
     };
     var params = new URLSearchParams({callback:cbName, t:Date.now(),
       date:data.date, event:data.seva, amount:data.amount,
-      sponsorName:data.sponsorName, volunteer:data.volunteer});
+      sponsorName:data.sponsorName, volunteer:data.volunteer, centre:data.centre||'Sydney', contact:data.contact||''});
     script.src = url + '?' + params.toString();
     document.head.appendChild(script);
   });
