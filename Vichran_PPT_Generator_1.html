@@ -210,7 +210,7 @@ async function loadSponsors(){
     var r=await jsonpFetch(SCRIPT_URL);
     if(r.status!=='success')throw new Error(r.message||'Error');
     var rows=r.data||[];
-    var norm=function(s){return String(s||'').trim().toLowerCase();};
+    var norm=function(s){return String(s||'').trim().toLowerCase().replace(/[\u2010-\u2015\u2212]/g,'-').replace(/\s+/g,' ');};
     var sevas=sevasForDate(curDate);
     sponsors={};
     sevas.forEach(function(s){sponsors[s.seva]=[];});
@@ -231,7 +231,16 @@ async function loadSponsors(){
     });
     renderSponsors();updatePreview();
     var tot=Object.values(sponsors).reduce(function(s,a){return s+a.length;},0);
-    if(!tot)list.innerHTML='<div class="loading">No sponsors found for this date yet.</div>';
+    if(!tot){
+      // Debug: show what All Days rows exist
+      if(curDate==='All Days'){
+        var allDayRows=rows.filter(function(r){return norm(r['Date']||r['date']||'')==='all days';});
+        var sample=rows.slice(0,5).map(function(r){return 'Date:['+(r['Date']||r['date']||'')+'] Seva:['+(r['Seva']||r['seva']||'')+']';}).join('<br>');
+        list.innerHTML='<div class="loading" style="font-size:0.78rem">No match for All Days.<br><b>Rows with date=All Days:</b> '+allDayRows.length+'<br><b>Sheet sample (first 5):</b><br>'+sample+'</div>';
+      } else {
+        list.innerHTML='<div class="loading">No sponsors found for this date yet.</div>';
+      }
+    }
   }catch(err){list.innerHTML='<div class="loading" style="color:#C0442A">Error: '+err.message+'</div>';}
 }
 function renderSponsors(){
