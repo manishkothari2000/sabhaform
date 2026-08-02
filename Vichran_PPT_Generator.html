@@ -132,6 +132,7 @@ const VICHRAN_EVENTS = [
   {date:'09-Aug-2026',seva:'Sant Rasoi Seva - All Days',amount:351},
   {date:'10-Aug-2026',seva:'Sant Rasoi Seva - All Days',amount:351},
   {date:'11-Aug-2026',seva:'Sant Rasoi Seva - All Days',amount:351},
+{date:'All Days',seva:'Sant Rasoi Seva - All Days',amount:351},
 ];
 
 var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -146,7 +147,18 @@ function normDate(d){
   return s.replace(/\s+/g,'-');
 }
 function uniqueDates(){return[...new Set(VICHRAN_EVENTS.map(function(e){return e.date;}))];}
-function sevasForDate(d){return VICHRAN_EVENTS.filter(function(e){return e.date===d;});}
+function sevasForDate(d){
+  if(d==='All Days'){
+    // Return unique seva types that have "All Days" entries
+    var allDaySevas=[];
+    var seen={};
+    VICHRAN_EVENTS.forEach(function(e){
+      if(e.date==='All Days'&&!seen[e.seva]){seen[e.seva]=true;allDaySevas.push(e);}
+    });
+    return allDaySevas;
+  }
+  return VICHRAN_EVENTS.filter(function(e){return e.date===d;});
+}
 function chunk(arr,n){var o=[];for(var i=0;i<arr.length;i+=n)o.push(arr.slice(i,i+n));return o;}
 function showErr(msg){var el=document.getElementById('errorMsg');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},4000);}
 var sponsors={};
@@ -161,6 +173,11 @@ function populateDates(){
     o.textContent=dt.toLocaleDateString('en-AU',{weekday:'long'})+', '+d;
     sel.appendChild(o);
   });
+  // Add "All Days" as a separate option
+  var allOpt=document.createElement('option');
+  allOpt.value='All Days';
+  allOpt.textContent='All Days (whole-event seva)';
+  sel.appendChild(allOpt);
 }
 populateDates();
 document.getElementById('perSlide').addEventListener('input',updatePreview);
@@ -193,20 +210,37 @@ async function loadSponsors(){
     var r=await jsonpFetch(SCRIPT_URL);
     if(r.status!=='success')throw new Error(r.message||'Error');
     var rows=r.data||[];
-    var norm=function(s){return String(s||'').trim().toLowerCase();};
+    var norm=function(s){return String(s||'').trim().toLowerCase().replace(/[\u2010-\u2015\u2212]/g,'-').replace(/\s+/g,' ');};
     var sevas=sevasForDate(curDate);
     sponsors={};
     sevas.forEach(function(s){sponsors[s.seva]=[];});
     rows.forEach(function(r){
       var rd=normDate(r['Date']||r['date']||'');
+      var rawDate=norm(r['Date']||r['date']||'');
       var rs=norm(r['Seva']||r['seva']||r['Event']||r['event']||'');
       var rn=(r['Sponsor Name']||r['sponsor name']||'').trim();
-      var dateMatch=(rd===curDate||norm(r['Date']||r['date']||'')==='all days');
+      var dateMatch;
+      if(curDate==='All Days'){
+        // Only match rows whose sheet date is "All Days"
+        dateMatch=(rawDate==='all days');
+      } else {
+        // Match this specific date, plus always include "All Days" sevas
+        dateMatch=(rd===curDate||rawDate==='all days');
+      }
       if(dateMatch&&rn)sevas.forEach(function(s){if(norm(s.seva)===rs&&!sponsors[s.seva].includes(rn))sponsors[s.seva].push(rn);});
     });
     renderSponsors();updatePreview();
     var tot=Object.values(sponsors).reduce(function(s,a){return s+a.length;},0);
-    if(!tot)list.innerHTML='<div class="loading">No sponsors found for this date yet.</div>';
+    if(!tot){
+      // Debug: show what All Days rows exist
+      if(curDate==='All Days'){
+        var allDayRows=rows.filter(function(r){return norm(r['Date']||r['date']||'')==='all days';});
+        var sample=rows.slice(0,5).map(function(r){return 'Date:['+(r['Date']||r['date']||'')+'] Seva:['+(r['Seva']||r['seva']||'')+']';}).join('<br>');
+        list.innerHTML='<div class="loading" style="font-size:0.78rem">No match for All Days.<br><b>Rows with date=All Days:</b> '+allDayRows.length+'<br><b>Sheet sample (first 5):</b><br>'+sample+'</div>';
+      } else {
+        list.innerHTML='<div class="loading">No sponsors found for this date yet.</div>';
+      }
+    }
   }catch(err){list.innerHTML='<div class="loading" style="color:#C0442A">Error: '+err.message+'</div>';}
 }
 function renderSponsors(){
@@ -236,6 +270,9 @@ function updatePreview(){
   sevas.forEach(function(s){
     var names=sponsors[s.seva]||[];
     if(!names.length)return;
+    // Divider slide in preview
+    sn++;
+    html+='<div class="preview-slide" style="background:#FFEAD9;border-color:#E97132;"><div class="slide-num">SLIDE '+sn+' (Title)</div><div class="slide-sub" style="font-weight:bold;color:#AE5425;font-size:0.9rem;">'+s.seva+'</div></div>';
     chunk(names,n).forEach(function(c){sn++;tot+=c.length;
       html+='<div class="preview-slide"><div class="slide-num">SLIDE '+sn+'</div><div class="slide-sub">'+s.seva+'</div>'+c.map(function(nm){return'<div class="pname">'+nm+'</div>';}).join('')+'</div>';
     });
@@ -258,6 +295,12 @@ async function generatePPT(){
     sevas.forEach(function(sv){
       var names=sponsors[sv.seva]||[];
       if(!names.length)return;
+      // Divider/title slide for this seva group
+      var titleSlide=pptx.addSlide();
+      titleSlide.addImage({data:'image/jpeg;base64,'+BG,x:0,y:0,w:'100%',h:'100%'});
+      titleSlide.addText('Pujya Atmatrupt Swami Vichran',{x:0.5,y:2.30,w:12.33,h:0.80,align:'center',fontFace:'Baskerville Old Face',fontSize:32,color:'AE5425',bold:false,wrap:true});
+      titleSlide.addText(sv.seva,{x:0.5,y:3.30,w:12.33,h:0.90,align:'center',fontFace:'Georgia',fontSize:30,color:'6B4C35',bold:true,wrap:true});
+      // Sponsor slides
       chunk(names,n).forEach(function(c){
         var slide=pptx.addSlide();
         slide.addImage({data:'image/jpeg;base64,'+BG,x:0,y:0,w:'100%',h:'100%'});
@@ -267,7 +310,8 @@ async function generatePPT(){
         slide.addText(no,{x:1.58,y:1.65,w:9.50,h:4.00,align:'center',valign:'top',wrap:true,lineSpacingMultiple:1.15});
       });
     });
-    await pptx.writeFile({fileName:'Vichran_'+curDate+'.pptx'});
+    var safeName=curDate.replace(/\s+/g,'_');
+    await pptx.writeFile({fileName:'Vichran_'+safeName+'.pptx'});
   }catch(err){showErr('Error: '+err.message);}
   btn.disabled=false;btn.textContent='Generate & Download PPTX';
 }
