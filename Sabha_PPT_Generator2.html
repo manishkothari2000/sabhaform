@@ -258,14 +258,13 @@ async function loadSponsors() {
       if (s.match(/^\d{4}-\d{2}-\d{2}T/)) {
         // Parse the date portion directly (ignore time/timezone — just use YYYY-MM-DD)
         // Add offset for Australia UTC+10/+11: if time is T14:00Z that means midnight AEST
-        const isoDate = new Date(s);
-        // Use UTC+10 offset to get the correct local date
-        const localMs = isoDate.getTime() + (10 * 60 * 60 * 1000);
-        const local = new Date(localMs);
-        const dd = String(local.getUTCDate()).padStart(2,'0');
-        const mon = MONTHS[local.getUTCMonth()];
-        const yyyy = local.getUTCFullYear();
-        return dd + '-' + mon + '-' + yyyy;
+        // Convert to Sydney local date (handles AEST +10 and AEDT +11 automatically)
+        const parts = new Intl.DateTimeFormat('en-AU', {
+          timeZone: 'Australia/Sydney', day: '2-digit', month: 'numeric', year: 'numeric'
+        }).formatToParts(new Date(s));
+        const p = {};
+        parts.forEach(x => { p[x.type] = x.value; });
+        return p.day + '-' + MONTHS[parseInt(p.month, 10) - 1] + '-' + p.year;
       }
       // Already formatted like 14-Jun-2026 or 14 Jun 2026
       return s.replace(/\s+/g,'-');
