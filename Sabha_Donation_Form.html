@@ -62,9 +62,47 @@ select:focus,input[type=text]:focus{border-color:var(--saffron-lt);box-shadow:0 
 .nav-link{text-align:center;margin-top:20px;font-size:0.88rem;color:var(--text-mid);}
 .nav-link a{color:var(--saffron);text-decoration:none;font-weight:bold;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* Returning-sponsor search */
+.search-wrap{position:relative;margin-bottom:14px;}
+.search-wrap input{margin-bottom:0;}
+.search-status{font-size:0.78rem;color:var(--text-mid);font-style:italic;margin-top:5px;}
+.suggest{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#FFFDF9;border:1.5px solid var(--border);
+  border-radius:8px;box-shadow:0 6px 20px var(--shadow);max-height:260px;overflow-y:auto;z-index:20;display:none;}
+.suggest.show{display:block;}
+.suggest-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid #EDE0D0;}
+.suggest-item:last-child{border-bottom:none;}
+.suggest-item:hover,.suggest-item.active{background:#FFF1E6;}
+.suggest-item .sn{font-size:0.98rem;color:var(--text-dark);}
+.suggest-item .sm{font-size:0.75rem;color:var(--text-mid);margin-top:2px;}
+.suggest-empty{padding:10px 14px;font-size:0.85rem;color:var(--text-mid);font-style:italic;}
+.picked{display:none;align-items:center;justify-content:space-between;gap:10px;background:#EEF6EE;border:1px solid #B9D8BC;
+  border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:0.9rem;color:#196B24;}
+.picked.show{display:flex;}
+.picked button{background:none;border:1px solid #B9D8BC;border-radius:6px;color:#196B24;cursor:pointer;
+  font-family:Georgia,serif;font-size:0.8rem;padding:4px 10px;white-space:nowrap;}
+.dup-warn{display:none;margin-top:8px;padding:9px 12px;background:#FFF7E0;border:1px solid #E8C96A;border-radius:8px;
+  font-size:0.85rem;color:#7A5A00;}
+.dup-warn.show{display:block;}
+.or-line{font-size:0.72rem;color:var(--text-mid);text-align:center;margin:2px 0 10px;letter-spacing:0.05em;}
 </style>
 </head>
 <body>
+<div id="passwordGate" style="position:fixed;inset:0;background:#FAF6F0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:9999;padding:24px;
+  background-image:radial-gradient(ellipse 80% 30% at 50% 0%,rgba(233,113,50,0.07) 0%,transparent 70%);">
+  <div style="background:white;border:1px solid #DDD0C0;border-radius:14px;padding:36px 32px;
+    max-width:380px;width:100%;box-shadow:0 4px 24px rgba(174,84,37,0.15);text-align:center;">
+    <div style="font-family:Georgia,serif;font-size:1.3rem;font-weight:bold;color:#AE5425;margin-bottom:4px;">Sabha Seva Yajman</div>
+    <div style="font-size:0.82rem;color:#6B4C35;font-style:italic;margin-bottom:24px;">Donation Entry &mdash; Authorised Access Only</div>
+    <div style="font-size:0.7rem;font-weight:bold;letter-spacing:0.08em;color:#AE5425;text-transform:uppercase;margin-bottom:8px;text-align:left;">Enter Password</div>
+    <input type="password" id="pwdInput" placeholder="Password" onkeydown="if(event.key==='Enter')checkPassword()"
+      style="width:100%;padding:11px 14px;font-family:Georgia,serif;font-size:1rem;border:1.5px solid #DDD0C0;
+      border-radius:8px;background:#FFFCF8;outline:none;margin-bottom:12px;color:#2C1A0E;" />
+    <button onclick="checkPassword()" style="width:100%;padding:13px;font-family:Georgia,serif;font-size:1rem;font-weight:bold;
+      color:white;background:linear-gradient(135deg,#AE5425 0%,#E97132 100%);border:none;border-radius:10px;cursor:pointer;">Enter</button>
+    <div id="pwdError" style="display:none;margin-top:10px;color:#C0442A;font-size:0.85rem;"></div>
+  </div>
+</div>
 <div class="logo">Sabha Seva Yajman</div>
 <div class="subtitle">Donation Entry Form</div>
 
@@ -80,6 +118,21 @@ select:focus,input[type=text]:focus{border-color:var(--saffron-lt);box-shadow:0 
     </div>
   </div>
 
+  <!-- Returning sponsor search -->
+  <div class="field">
+    <label>Returning Sponsor? Search by name</label>
+    <div class="search-wrap">
+      <input type="text" id="sponsorSearch" placeholder="Type 2+ letters, e.g. Desai" autocomplete="off"
+        oninput="onSearchInput()" onkeydown="onSearchKey(event)" onblur="setTimeout(function(){ if (document.activeElement.id !== 'sponsorSearch') hideSuggest(); },200)" />
+      <div class="suggest" id="suggestBox"></div>
+    </div>
+    <div class="search-status" id="searchStatus">Loading past sponsors…</div>
+  </div>
+  <div class="picked" id="pickedBox">
+    <span>✓ <strong id="pickedName"></strong><br><span id="pickedMeta" style="font-size:0.78rem;color:#3d6b40"></span></span>
+    <button type="button" onclick="clearPicked()">Change</button>
+  </div>
+  <div class="or-line" id="orLine">— OR ENTER A NEW SPONSOR —</div>
   <!-- Sponsor Name -->
   <div class="field">
     <label>Sponsor Name</label>
@@ -97,8 +150,8 @@ select:focus,input[type=text]:focus{border-color:var(--saffron-lt);box-shadow:0 
     </div>
   </div>
 
+  <div class="dup-warn" id="dupWarn"></div>
   <div class="divider"></div>
-
   <!-- Volunteer -->
   <div class="field">
     <label>Your Name (Volunteer)</label>
@@ -114,7 +167,8 @@ select:focus,input[type=text]:focus{border-color:var(--saffron-lt);box-shadow:0 
 </div>
 
 <div class="nav-link">
-  Want to generate slides? <a href="Sabha_PPT_Generator.html">Open PPT Generator →</a>
+  Want to generate slides? <a href="Sabha_PPT_Generator.html">Open PPT Generator →</a><br>
+  <a href="Sabha_Sponsor_Report.html" style="display:inline-block;margin-top:8px">Sponsor Reports &amp; Export →</a>
 </div>
 
 <script>
@@ -361,6 +415,8 @@ async function submitEntry() {
       document.getElementById('singleName').value = '';
       document.getElementById('coupleName1').value = '';
       document.getElementById('coupleName2').value = '';
+      rememberEntry(payload);
+      clearPicked();
       // Scroll to success message
       document.getElementById('successMsg').scrollIntoView({behavior:'smooth'});
     } else {
@@ -374,6 +430,158 @@ async function submitEntry() {
 }
 
 populateEvents();
+
+// ===== Returning-sponsor search =====
+// Reads all past entries from the same Google Sheet endpoint the PPT generator uses (GET with no parameters).
+let pastRows = [];          // [{date, event, name}]
+let sponsorIndex = [];      // [{name, key, count, lastDate, lastEvent, lastTs}]
+let pickedSponsor = null;
+let activeIdx = -1;
+
+function fold(s) { return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
+function getField(r, names) {
+  for (const k of Object.keys(r)) { if (names.includes(k.toLowerCase().replace(/[\s_]/g,''))) return r[k]; }
+  return '';
+}
+const MONTHS_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function toSydneyDisplay(d) {
+  const s = String(d||'').trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const p = {};
+    new Intl.DateTimeFormat('en-AU',{timeZone:'Australia/Sydney',day:'2-digit',month:'numeric',year:'numeric'})
+      .formatToParts(new Date(s)).forEach(x => p[x.type]=x.value);
+    return p.day + '-' + MONTHS_S[parseInt(p.month,10)-1] + '-' + p.year;
+  }
+  return s.replace(/\s+/g,'-');
+}
+function displayToTs(disp) { const t = Date.parse(String(disp).replace(/-/g,' ')); return isNaN(t) ? 0 : t; }
+
+function buildIndex() {
+  const map = new Map();
+  pastRows.forEach(r => {
+    if (!r.name) return;
+    const key = fold(r.name);
+    const ts = displayToTs(r.date);
+    const cur = map.get(key);
+    if (!cur) map.set(key, {name:r.name, key, count:1, lastDate:r.date, lastEvent:r.event, lastTs:ts});
+    else {
+      cur.count++;
+      if (ts >= cur.lastTs) { cur.lastTs = ts; cur.lastDate = r.date; cur.lastEvent = r.event; cur.name = r.name; }
+    }
+  });
+  sponsorIndex = [...map.values()];
+}
+
+async function loadPastSponsors() {
+  const status = document.getElementById('searchStatus');
+  try {
+    const result = await jsonpFetch(SCRIPT_URL);
+    if (result.status !== 'success') throw new Error(result.message || 'error');
+    pastRows = (result.data || []).map(r => ({
+      date: toSydneyDisplay(getField(r,['date'])),
+      event: String(getField(r,['event'])||'').trim(),
+      name: String(getField(r,['sponsorname','sponsor','name'])||'').trim()
+    })).filter(r => r.name);
+    buildIndex();
+    status.textContent = sponsorIndex.length + ' past sponsors loaded. Pick one to skip typing their names.';
+  } catch (e) {
+    status.textContent = 'Could not load past sponsors — enter the name below as usual.';
+  }
+}
+
+function onSearchInput() {
+  const q = fold(document.getElementById('sponsorSearch').value);
+  const box = document.getElementById('suggestBox');
+  activeIdx = -1;
+  if (q.length < 2) { hideSuggest(); return; }
+  const words = q.split(' ');
+  const hits = sponsorIndex
+    .filter(s => words.every(w => s.key.includes(w)))
+    .sort((a,b) => (b.key.startsWith(q) - a.key.startsWith(q)) || (b.lastTs - a.lastTs))
+    .slice(0, 12);
+  if (!hits.length) {
+    box.innerHTML = '<div class="suggest-empty">No past sponsor matches — enter as a new sponsor below.</div>';
+  } else {
+    box.innerHTML = hits.map((s,i) =>
+      '<div class="suggest-item" data-i="'+i+'" onmousedown="pickSponsor('+sponsorIndex.indexOf(s)+')">' +
+      '<div class="sn">' + escapeHtml(s.name) + '</div>' +
+      '<div class="sm">' + s.count + (s.count===1?' time':' times') + ' · last: ' + escapeHtml(s.lastDate) + ' — ' + escapeHtml(s.lastEvent) + '</div></div>'
+    ).join('');
+  }
+  box.classList.add('show');
+}
+function onSearchKey(e) {
+  const items = [...document.querySelectorAll('#suggestBox .suggest-item')];
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') { activeIdx = Math.min(activeIdx+1, items.length-1); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { activeIdx = Math.max(activeIdx-1, 0); e.preventDefault(); }
+  else if (e.key === 'Enter' && activeIdx >= 0) { items[activeIdx].dispatchEvent(new Event('mousedown')); e.preventDefault(); return; }
+  else return;
+  items.forEach((el,i) => el.classList.toggle('active', i===activeIdx));
+}
+function hideSuggest() { document.getElementById('suggestBox').classList.remove('show'); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function pickSponsor(idx) {
+  const s = sponsorIndex[idx];
+  pickedSponsor = s;
+  setNameMode('single');
+  document.getElementById('singleName').value = s.name;     // exact name as previously recorded
+  document.getElementById('coupleName1').value = '';
+  document.getElementById('coupleName2').value = '';
+  document.getElementById('pickedName').textContent = s.name;
+  document.getElementById('pickedMeta').textContent = 'Sponsored ' + s.count + (s.count===1?' time':' times') + ' · last ' + s.lastDate;
+  document.getElementById('pickedBox').classList.add('show');
+  document.getElementById('sponsorSearch').value = '';
+  hideSuggest();
+  checkDuplicate();
+}
+function clearPicked() {
+  pickedSponsor = null;
+  document.getElementById('pickedBox').classList.remove('show');
+  document.getElementById('singleName').value = '';
+  document.getElementById('dupWarn').classList.remove('show');
+}
+// Warn (but don't block) if this sponsor is already recorded for the selected event
+function checkDuplicate() {
+  const warn = document.getElementById('dupWarn');
+  const ev = document.getElementById('eventSelect').value;
+  const name = fold(getSponsorName());
+  warn.classList.remove('show');
+  if (!ev || !name) return;
+  const e = JSON.parse(ev);
+  const dup = pastRows.some(r => fold(r.name) === name && r.date === e.display && fold(r.event) === fold(e.description));
+  if (dup) {
+    warn.innerHTML = '⚠️ <strong>' + escapeHtml(getSponsorName()) + '</strong> is already recorded for ' +
+      escapeHtml(e.description) + ' on ' + escapeHtml(e.display) + '. Submit only if this is a second donation.';
+    warn.classList.add('show');
+  }
+}
+function rememberEntry(p) {
+  pastRows.push({date:p.date, event:p.event, name:p.sponsorName});
+  buildIndex();
+}
+document.getElementById('eventSelect').addEventListener('change', checkDuplicate);
+['singleName','coupleName1','coupleName2'].forEach(id => document.getElementById(id).addEventListener('blur', checkDuplicate));
+// Password gate — same password as the PPT generator and Sponsor Reports.
+// Past sponsors are only loaded after the correct password is entered.
+const APP_PASSWORD = 'baps2026';
+function checkPassword() {
+  if (document.getElementById('pwdInput').value === APP_PASSWORD) {
+    document.getElementById('passwordGate').style.display = 'none';
+    document.body.style.overflow = '';
+    loadPastSponsors();
+  } else {
+    const err = document.getElementById('pwdError');
+    err.textContent = 'Incorrect password. Please try again.';
+    err.style.display = 'block';
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+  }
+}
+document.body.style.overflow = 'hidden';
+document.getElementById('pwdInput').focus();
 
 
 // JSONP fetch — bypasses CORS for Google Apps Script GET

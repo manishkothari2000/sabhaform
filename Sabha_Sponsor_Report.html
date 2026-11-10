@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sabha Sponsor Reports</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --saffron:#AE5425;--saffron-lt:#E97132;--cream:#FAF6F0;
+  --warm-white:#FFFDF9;--border:#DDD0C0;--text-dark:#2C1A0E;
+  --text-mid:#6B4C35;--shadow:rgba(174,84,37,0.15);--green:#196B24;
+}
+body{min-height:100vh;background:var(--cream);font-family:Georgia,serif;color:var(--text-dark);
+  display:flex;flex-direction:column;align-items:center;padding:32px 16px 60px;
+  background-image:radial-gradient(ellipse 80% 30% at 50% 0%,rgba(233,113,50,0.07) 0%,transparent 70%);}
+.logo{font-size:1.5rem;font-weight:bold;color:var(--saffron);text-align:center;margin-bottom:4px;letter-spacing:0.03em;}
+.subtitle{text-align:center;font-size:0.85rem;color:var(--text-mid);font-style:italic;margin-bottom:24px;}
+.card{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;
+  padding:24px;width:100%;max-width:980px;box-shadow:0 4px 24px var(--shadow);}
+.section-title{font-size:0.72rem;font-weight:bold;letter-spacing:0.08em;color:var(--saffron);
+  text-transform:uppercase;margin-bottom:10px;}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 16px;margin-bottom:14px;}
+.filters label{display:block;font-size:0.68rem;font-weight:bold;letter-spacing:0.08em;color:var(--saffron);
+  text-transform:uppercase;margin-bottom:5px;}
+.filters input,.filters select{width:100%;padding:9px 11px;font-family:Georgia,serif;font-size:0.92rem;
+  border:1.5px solid var(--border);border-radius:8px;background:#FFFCF8;color:var(--text-dark);outline:none;}
+.filters input:focus,.filters select:focus{border-color:var(--saffron-lt);}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+.btn{padding:10px 16px;font-family:Georgia,serif;font-size:0.9rem;font-weight:bold;border-radius:9px;cursor:pointer;
+  border:2px solid var(--saffron);background:transparent;color:var(--saffron);}
+.btn:hover{background:var(--saffron);color:white;}
+.btn.primary{background:linear-gradient(135deg,var(--saffron) 0%,var(--saffron-lt) 100%);color:white;border-color:transparent;}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.tab{padding:8px 14px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:0.85rem;
+  color:var(--text-mid);background:#FFFCF8;}
+.tab.active{background:var(--saffron);border-color:var(--saffron);color:white;}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+.stat{background:#FFF5EE;border:1px solid var(--border);border-radius:10px;padding:10px 14px;}
+.stat .v{font-size:1.3rem;font-weight:bold;color:var(--saffron);}
+.stat .l{font-size:0.72rem;color:var(--text-mid);letter-spacing:0.05em;text-transform:uppercase;}
+.recon{font-size:0.82rem;margin-bottom:12px;padding:8px 12px;border-radius:8px;}
+.recon.ok{background:#EEF6EE;border:1px solid #B9D8BC;color:var(--green);}
+.recon.bad{background:#FFF0ED;border:1px solid #F4A88A;color:#C0442A;}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;max-height:560px;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.88rem;}
+th{position:sticky;top:0;background:#F6E9DD;color:var(--text-dark);text-align:left;padding:9px 10px;
+  font-size:0.75rem;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;border-bottom:1px solid var(--border);}
+td{padding:8px 10px;border-bottom:1px solid #EFE4D8;vertical-align:top;}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+tr:nth-child(even) td{background:#FFFAF5;}
+tfoot td{font-weight:bold;background:#F6E9DD !important;position:sticky;bottom:0;}
+.loading,.note{color:var(--text-mid);font-style:italic;font-size:0.9rem;padding:12px 0;}
+.error-msg{margin:10px 0;padding:10px 14px;background:#FFF0ED;border:1px solid #F4A88A;border-radius:8px;color:#C0442A;font-size:0.88rem;display:none;}
+.error-msg.show{display:block;}
+.nav-link{text-align:center;margin-top:20px;font-size:0.88rem;color:var(--text-mid);}
+.nav-link a{color:var(--saffron);text-decoration:none;font-weight:bold;margin:0 8px;}
+@media (max-width:600px){.card{padding:16px;}}
+</style>
+</head>
+<body>
+<div id="passwordGate" style="position:fixed;inset:0;background:#FAF6F0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:9999;padding:24px;">
+  <div style="background:white;border:1px solid #DDD0C0;border-radius:14px;padding:36px 32px;
+    max-width:380px;width:100%;box-shadow:0 4px 24px rgba(174,84,37,0.15);text-align:center;">
+    <div style="font-size:1.3rem;font-weight:bold;color:#AE5425;margin-bottom:4px;">Sabha Seva Yajman</div>
+    <div style="font-size:0.82rem;color:#6B4C35;font-style:italic;margin-bottom:24px;">Sponsor Reports &mdash; Authorised Access Only</div>
+    <input type="password" id="pwdInput" placeholder="Password" onkeydown="if(event.key==='Enter')checkPassword()"
+      style="width:100%;padding:11px 14px;font-family:Georgia,serif;font-size:1rem;border:1.5px solid #DDD0C0;
+      border-radius:8px;background:#FFFCF8;outline:none;margin-bottom:12px;color:#2C1A0E;" />
+    <button onclick="checkPassword()" style="width:100%;padding:13px;font-family:Georgia,serif;font-size:1rem;font-weight:bold;
+      color:white;background:linear-gradient(135deg,#AE5425 0%,#E97132 100%);border:none;border-radius:10px;cursor:pointer;">Enter</button>
+    <div id="pwdError" style="display:none;margin-top:10px;color:#C0442A;font-size:0.85rem;"></div>
+  </div>
+</div>
+
+<div class="logo">Sabha Seva Yajman</div>
+<div class="subtitle">Sponsor Reports &amp; Export</div>
+
+<div class="card">
+  <div class="section-title">Report Parameters</div>
+  <div class="filters">
+    <div><label>From date</label><input type="date" id="fFrom" onchange="applyFilters()" /></div>
+    <div><label>To date</label><input type="date" id="fTo" onchange="applyFilters()" /></div>
+    <div><label>Event</label><select id="fEvent" onchange="applyFilters()"><option value="">All events</option></select></div>
+    <div><label>Sponsor name contains</label><input type="text" id="fSponsor" placeholder="e.g. Desai" oninput="applyFilters()" /></div>
+    <div><label>Volunteer contains</label><input type="text" id="fVolunteer" placeholder="e.g. Raj" oninput="applyFilters()" /></div>
+    <div><label>Quick range</label>
+      <select id="fQuick" onchange="quickRange()">
+        <option value="">—</option>
+        <option value="thisMonth">This month</option>
+        <option value="lastMonth">Last month</option>
+        <option value="fy">This financial year (Jul–Jun)</option>
+        <option value="lastFy">Last financial year</option>
+        <option value="all">All dates</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="loadData()">↻ Refresh from Google Sheets</button>
+    <button class="btn" onclick="resetFilters()">Clear filters</button>
+    <span style="flex:1"></span>
+    <button class="btn" id="btnCsv" onclick="exportCsv()" disabled>Export CSV (this view)</button>
+    <button class="btn primary" id="btnXlsx" onclick="exportXlsx()" disabled>Export Excel (all views)</button>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="summary" id="summary"></div>
+  <div id="recon"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-view="entries" onclick="setView('entries')">Entries</div>
+    <div class="tab" data-view="sponsor" onclick="setView('sponsor')">By Sponsor</div>
+    <div class="tab" data-view="event" onclick="setView('event')">By Event</div>
+  </div>
+  <div class="table-wrap" id="tableWrap"><div class="loading" style="padding:16px">Enter the password to load data…</div></div>
+</div>
+
+<div class="nav-link">
+  <a href="Sabha_Donation_Form.html">← Donation Entry Form</a>
+  <a href="Sabha_PPT_Generator.html">PPT Generator →</a>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbz3OwmVycgTHUIM6bNcj0qR_P8aioF2hgDV1yB6ztFAGa4CiCxJeryYsbkfy37pZf_w/exec";
+const APP_PASSWORD = 'baps2026';   // same password as the PPT generator
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+let allRows = [];      // normalised rows: {iso, display, event, sponsor, amount, amountRaw, volunteer}
+let filtered = [];
+let view = 'entries';
+let sortState = {entries:{k:'iso',d:-1}, sponsor:{k:'count',d:-1}, event:{k:'iso',d:-1}};
+let loadedAt = null;
+
+function checkPassword() {
+  if (document.getElementById('pwdInput').value === APP_PASSWORD) {
+    document.getElementById('passwordGate').style.display = 'none';
+    loadData();
+  } else {
+    const err = document.getElementById('pwdError');
+    err.textContent = 'Incorrect password. Please try again.'; err.style.display = 'block';
+    document.getElementById('pwdInput').value = '';
+  }
+}
+
+function jsonpFetch(url) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'cb_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => { delete window[cbName]; script.remove(); reject(new Error('Request timed out')); }, 20000);
+    window[cbName] = data => { clearTimeout(timeout); delete window[cbName]; script.remove(); resolve(data); };
+    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName + '&t=' + Date.now();
+    script.onerror = () => { clearTimeout(timeout); reject(new Error('Could not reach Google Sheets')); };
+    document.body.appendChild(script);
+  });
+}
+
+// Column lookup that ignores case/spaces, so "Sponsor Name", "sponsorName", "sponsor name" all work
+function getField(r, names) {
+  for (const k of Object.keys(r)) if (names.includes(k.toLowerCase().replace(/[\s_]/g,''))) return r[k];
+  return '';
+}
+// Sheet dates arrive as UTC timestamps for Sydney midnight; convert using Sydney time (handles AEST/AEDT)
+function toIso(d) {
+  const s = String(d||'').trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const p = {};
+    new Intl.DateTimeFormat('en-AU',{timeZone:'Australia/Sydney',day:'2-digit',month:'2-digit',year:'numeric'})
+      .formatToParts(new Date(s)).forEach(x => p[x.type]=x.value);
+    return p.year + '-' + p.month + '-' + p.day;
+  }
+  const t = Date.parse(s.replace(/-/g,' '));
+  if (isNaN(t)) return '';
+  const dt = new Date(t);
+  return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+}
+function isoToDisplay(iso) { if(!iso) return ''; const [y,m,d] = iso.split('-'); return d + '-' + MONTHS[+m-1] + '-' + y; }
+function fold(s) { return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
+function money(n) { return '$' + Number(n||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function esc(s) { return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showError(m) { const e = document.getElementById('errorMsg'); e.textContent = m; e.classList.add('show'); }
+
+async function loadData() {
+  document.getElementById('errorMsg').classList.remove('show');
+  document.getElementById('tableWrap').innerHTML = '<div class="loading" style="padding:16px">Loading from Google Sheets…</div>';
+  try {
+    const result = await jsonpFetch(SCRIPT_URL);
+    if (result.status !== 'success') throw new Error(result.message || 'Unknown error');
+    allRows = (result.data || []).map(r => {
+      const iso = toIso(getField(r,['date']));
+      const amountRaw = getField(r,['amount','amt']);
+      const amount = parseFloat(String(amountRaw).replace(/[$,\s]/g,''));
+      return {
+        iso, display: iso ? isoToDisplay(iso) : String(getField(r,['date'])||''),
+        event: String(getField(r,['event'])||'').trim(),
+        sponsor: String(getField(r,['sponsorname','sponsor','name'])||'').trim(),
+        amount: isNaN(amount) ? 0 : amount,
+        amountMissing: isNaN(amount),
+        volunteer: String(getField(r,['volunteer','volunteername','enteredby'])||'').trim()
+      };
+    }).filter(r => r.sponsor || r.event);
+    loadedAt = new Date();
+    const events = [...new Set(allRows.map(r => r.event).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+    const sel = document.getElementById('fEvent'); const cur = sel.value;
+    sel.innerHTML = '<option value="">All events</option>' + events.map(e => '<option>' + esc(e) + '</option>').join('');
+    sel.value = cur;
+    document.getElementById('btnCsv').disabled = false;
+    document.getElementById('btnXlsx').disabled = false;
+    applyFilters();
+  } catch (e) {
+    showError('Could not load data: ' + e.message);
+    document.getElementById('tableWrap').innerHTML = '';
+  }
+}
+
+function quickRange() {
+  const q = document.getElementById('fQuick').value;
+  const now = new Date(); const y = now.getFullYear(), m = now.getMonth();
+  const f = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  let from = '', to = '';
+  if (q === 'thisMonth') { from = f(new Date(y,m,1)); to = f(new Date(y,m+1,0)); }
+  else if (q === 'lastMonth') { from = f(new Date(y,m-1,1)); to = f(new Date(y,m,0)); }
+  else if (q === 'fy' || q === 'lastFy') {
+    let start = m >= 6 ? y : y-1; if (q === 'lastFy') start--;
+    from = start + '-07-01'; to = (start+1) + '-06-30';
+  }
+  document.getElementById('fFrom').value = from;
+  document.getElementById('fTo').value = to;
+  applyFilters();
+}
+function resetFilters() {
+  ['fFrom','fTo','fEvent','fSponsor','fVolunteer','fQuick'].forEach(id => document.getElementById(id).value = '');
+  applyFilters();
+}
+function currentParams() {
+  return {
+    from: document.getElementById('fFrom').value, to: document.getElementById('fTo').value,
+    event: document.getElementById('fEvent').value,
+    sponsor: document.getElementById('fSponsor').value.trim(), volunteer: document.getElementById('fVolunteer').value.trim()
+  };
+}
+function applyFilters() {
+  const p = currentParams();
+  const sw = fold(p.sponsor).split(' ').filter(Boolean), vw = fold(p.volunteer);
+  filtered = allRows.filter(r =>
+    (!p.from || (r.iso && r.iso >= p.from)) && (!p.to || (r.iso && r.iso <= p.to)) &&
+    (!p.event || r.event === p.event) &&
+    (!sw.length || sw.every(w => fold(r.sponsor).includes(w))) &&
+    (!vw || fold(r.volunteer).includes(vw)));
+  render();
+}
+
+// ----- Views -----
+function bySponsor(rows) {
+  const m = new Map();
+  rows.forEach(r => {
+    const k = fold(r.sponsor); let s = m.get(k);
+    if (!s) { s = {sponsor:r.sponsor, count:0, total:0, first:r.iso, last:r.iso, lastEvent:r.event}; m.set(k,s); }
+    s.count++; s.total += r.amount;
+    if (r.iso && (!s.first || r.iso < s.first)) s.first = r.iso;
+    if (r.iso && (!s.last || r.iso >= s.last)) { s.last = r.iso; s.lastEvent = r.event; s.sponsor = r.sponsor; }
+  });
+  return [...m.values()];
+}
+function byEvent(rows) {
+  const m = new Map();
+  rows.forEach(r => {
+    const k = r.iso + '|' + fold(r.event); let e = m.get(k);
+    if (!e) { e = {iso:r.iso, event:r.event, count:0, total:0}; m.set(k,e); }
+    e.count++; e.total += r.amount;
+  });
+  return [...m.values()];
+}
+const COLS = {
+  entries: [ {k:'iso',h:'Date',f:r=>r.display}, {k:'event',h:'Event'}, {k:'sponsor',h:'Sponsor Name'},
+             {k:'amount',h:'Amount',num:1,f:r=>money(r.amount)}, {k:'volunteer',h:'Volunteer'} ],
+  sponsor: [ {k:'sponsor',h:'Sponsor Name'}, {k:'count',h:'Times Sponsored',num:1}, {k:'total',h:'Total Amount',num:1,f:r=>money(r.total)},
+             {k:'first',h:'First Date',f:r=>isoToDisplay(r.first)}, {k:'last',h:'Last Date',f:r=>isoToDisplay(r.last)}, {k:'lastEvent',h:'Last Event'} ],
+  event:   [ {k:'iso',h:'Date',f:r=>isoToDisplay(r.iso)}, {k:'event',h:'Event'}, {k:'count',h:'No. of Sponsors',num:1},
+             {k:'total',h:'Total Amount',num:1,f:r=>money(r.total)} ]
+};
+function viewRows(v) {
+  const rows = v === 'entries' ? filtered.slice() : v === 'sponsor' ? bySponsor(filtered) : byEvent(filtered);
+  const {k,d} = sortState[v];
+  rows.sort((a,b) => { const x=a[k], y=b[k]; return (typeof x === 'number' ? x-y : String(x||'').localeCompare(String(y||''))) * d; });
+  return rows;
+}
+function setView(v) {
+  view = v;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+  render();
+}
+function sortBy(k) {
+  const s = sortState[view];
+  if (s.k === k) s.d = -s.d; else { s.k = k; s.d = 1; }
+  render();
+}
+function render() {
+  const total = filtered.reduce((a,r) => a + r.amount, 0);
+  const sponsors = bySponsor(filtered), events = byEvent(filtered);
+  const missing = filtered.filter(r => r.amountMissing).length;
+  document.getElementById('summary').innerHTML =
+    stat(filtered.length, 'Entries') + stat(money(total), 'Total Amount') +
+    stat(sponsors.length, 'Unique Sponsors') + stat(events.length, 'Events');
+
+  // Control totals: each summary view must add back to the entries total
+  const sTot = sponsors.reduce((a,s)=>a+s.total,0), eTot = events.reduce((a,e)=>a+e.total,0);
+  const sCnt = sponsors.reduce((a,s)=>a+s.count,0), eCnt = events.reduce((a,e)=>a+e.count,0);
+  const ok = Math.abs(sTot-total) < 0.005 && Math.abs(eTot-total) < 0.005 && sCnt === filtered.length && eCnt === filtered.length;
+  let msg = ok ? '✓ Control totals reconcile: Entries, By Sponsor and By Event all = ' + filtered.length + ' entries / ' + money(total) + '.'
+               : '✗ Control totals do not reconcile — Entries ' + money(total) + ', By Sponsor ' + money(sTot) + ', By Event ' + money(eTot) + '.';
+  if (missing) msg += ' ⚠ ' + missing + ' entr' + (missing===1?'y has':'ies have') + ' no amount in the sheet (counted as $0).';
+  document.getElementById('recon').innerHTML = '<div class="recon ' + (ok && !missing ? 'ok' : 'bad') + '">' + esc(msg) + '</div>';
+
+  const rows = viewRows(view), cols = COLS[view];
+  if (!rows.length) { document.getElementById('tableWrap').innerHTML = '<div class="note" style="padding:16px">No entries match these parameters.</div>'; return; }
+  const s = sortState[view];
+  let h = '<table><thead><tr>' + cols.map(c => '<th class="' + (c.num?'num':'') + '" onclick="sortBy(\'' + c.k + '\')">' +
+          esc(c.h) + (s.k===c.k ? (s.d>0?' ▲':' ▼') : '') + '</th>').join('') + '</tr></thead><tbody>';
+  h += rows.map(r => '<tr>' + cols.map(c => '<td class="' + (c.num?'num':'') + '">' + esc(c.f ? c.f(r) : r[c.k]) + '</td>').join('') + '</tr>').join('');
+  const cntCol = view === 'entries' ? null : 'count';
+  h += '</tbody><tfoot><tr>' + cols.map((c,i) => {
+    if (i === 0) return '<td>Total (' + rows.length + ' rows)</td>';
+    if (c.k === 'amount' || c.k === 'total') return '<td class="num">' + money(total) + '</td>';
+    if (c.k === cntCol) return '<td class="num">' + filtered.length + '</td>';
+    return '<td></td>';
+  }).join('') + '</tr></tfoot></table>';
+  document.getElementById('tableWrap').innerHTML = h;
+}
+function stat(v,l) { return '<div class="stat"><div class="v">' + esc(v) + '</div><div class="l">' + esc(l) + '</div></div>'; }
+
+// ----- Export -----
+function stamp() {
+  const p = {};
+  new Intl.DateTimeFormat('en-AU',{timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})
+    .formatToParts(new Date()).forEach(x => p[x.type]=x.value);
+  return p.year + '-' + p.month + '-' + p.day + '_' + p.hour + p.minute;
+}
+function sheetData(v) {
+  // Plain values (numbers stay numbers) for export
+  const rows = viewRows(v);
+  if (v === 'entries') return [['Date','Event','Sponsor Name','Amount','Volunteer'],
+    ...rows.map(r => [r.display, r.event, r.sponsor, r.amount, r.volunteer])];
+  if (v === 'sponsor') return [['Sponsor Name','Times Sponsored','Total Amount','First Date','Last Date','Last Event'],
+    ...rows.map(r => [r.sponsor, r.count, r.total, isoToDisplay(r.first), isoToDisplay(r.last), r.lastEvent])];
+  return [['Date','Event','No. of Sponsors','Total Amount'], ...rows.map(r => [isoToDisplay(r.iso), r.event, r.count, r.total])];
+}
+function paramsSheet() {
+  const p = currentParams();
+  const total = filtered.reduce((a,r)=>a+r.amount,0);
+  return [['Sabha Sponsor Report'], [],
+    ['Run at (Sydney)', stamp().replace('_',' ')],
+    ['Data loaded at', loadedAt ? loadedAt.toLocaleString('en-AU',{timeZone:'Australia/Sydney'}) : ''],
+    ['From date', p.from ? isoToDisplay(p.from) : '(any)'], ['To date', p.to ? isoToDisplay(p.to) : '(any)'],
+    ['Event', p.event || '(all)'], ['Sponsor name contains', p.sponsor || '(any)'], ['Volunteer contains', p.volunteer || '(any)'], [],
+    ['Control totals'], ['Entries', filtered.length], ['Total amount', total],
+    ['By Sponsor total', bySponsor(filtered).reduce((a,s)=>a+s.total,0)], ['By Event total', byEvent(filtered).reduce((a,e)=>a+e.total,0)]];
+}
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function exportCsv() {
+  const data = sheetData(view);
+  const csv = data.map(r => r.map(v => {
+    const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const label = {entries:'Entries', sponsor:'By_Sponsor', event:'By_Event'}[view];
+  download(new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'}), 'Sabha_Sponsor_Report_' + label + '_' + stamp() + '.csv');
+}
+function exportXlsx() {
+  if (typeof XLSX === 'undefined') { showError('Excel library did not load — check your internet connection, or use Export CSV.'); return; }
+  const wb = XLSX.utils.book_new();
+  const add = (name, data, widths, moneyCols, dateCols) => {
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = widths.map(w => ({wch:w}));
+    // Store dates as real Excel dates (sortable/filterable), shown as dd-mmm-yyyy
+    if (dateCols) for (let r = 1; r < data.length; r++) dateCols.forEach(c => {
+      const cell = ws[XLSX.utils.encode_cell({r, c})];
+      const m = cell && typeof cell.v === 'string' && cell.v.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})$/);
+      if (m) { cell.t = 'n'; cell.v = (Date.UTC(+m[3], MONTHS.indexOf(m[2]), +m[1]) - Date.UTC(1899,11,30)) / 86400000; cell.z = 'dd-mmm-yyyy'; }
+    });
+    if (moneyCols) for (let r = 1; r < data.length; r++) moneyCols.forEach(c => {
+      const cell = ws[XLSX.utils.encode_cell({r, c})]; if (cell && typeof cell.v === 'number') cell.z = '$#,##0.00';
+    });
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  };
+  add('Entries', sheetData('entries'), [13,34,34,11,16], [3], [0]);
+  add('By Sponsor', sheetData('sponsor'), [34,16,14,13,13,34], [2], [3,4]);
+  add('By Event', sheetData('event'), [13,34,16,14], [3], [0]);
+  add('Parameters', paramsSheet(), [24,30], null);
+  const ws = wb.Sheets['Parameters']; [12,13,14].forEach(r => { const c = ws['B'+(r+1)]; if (c) c.z = '$#,##0.00'; });
+  XLSX.writeFile(wb, 'Sabha_Sponsor_Report_' + stamp() + '.xlsx');
+}
+</script>
+</body>
+</html>
